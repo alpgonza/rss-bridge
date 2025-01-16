@@ -27,19 +27,39 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
             $relativeUri = $titleElement->href;
             $uri = 'https://halktv.com.tr' . $relativeUri; // Ensure the URL is absolute
 
-            // Fetch the article page to get the date
+            // Extract thumbnail
+            $thumbnailElement = $element->find('img', 0);
+            $thumbnail = $thumbnailElement ? $thumbnailElement->src : '';
+
+            // Fetch the article page to get the date and content
             $articleHtml = getSimpleHTMLDOM($uri);
             if ($articleHtml) {
+                // Get date
                 $dateElement = $articleHtml->find('div.content-date time', 0);
                 $timestamp = $dateElement ? $dateElement->datetime : null;
                 if ($timestamp) {
                     $item['timestamp'] = strtotime($timestamp);
                 }
-            }
 
-            // Extract thumbnail
-            $thumbnailElement = $element->find('img', 0);
-            $thumbnail = $thumbnailElement ? $thumbnailElement->src : '';
+                // Get article content
+                $contentElement = $articleHtml->find('div.text-content', 0);
+                if ($contentElement) {
+                    // Remove banner elements
+                    foreach ($contentElement->find('div[class*="banner"]') as $unwanted) {
+                        $unwanted->outertext = '';
+                    }
+
+                    // Start with thumbnail
+                    $contentHtml = '';
+                    if ($thumbnail) {
+                        $contentHtml = '<img src="' . $thumbnail . '" /><br/><br/>';
+                    }
+                    
+                    // Add article content
+                    $contentHtml .= $contentElement->innertext;
+                    $item['content'] = $contentHtml;
+                }
+            }
 
             // Populate item data
             $item['title'] = $author . ' : ' . $title;
@@ -52,4 +72,3 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
         }
     }
 }
-

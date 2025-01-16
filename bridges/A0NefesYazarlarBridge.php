@@ -27,7 +27,7 @@ class A0NefesYazarlarBridge extends BridgeAbstract {
             if (!str_starts_with($item['uri'], 'https://')) {
                 $item['uri'] = 'https://www.nefes.com.tr' . $item['uri'];
             }
-            
+
             // Get title from title attribute and author from span
             $item['title'] = $authorElement->plaintext . ' : ' . $titleElement->title;
             $item['author'] = trim($authorElement->plaintext);
@@ -36,6 +36,7 @@ class A0NefesYazarlarBridge extends BridgeAbstract {
             $thumbnailElement = $element->find('img', 0);
             if ($thumbnailElement && isset($thumbnailElement->src)) {
                 $item['enclosures'] = [$thumbnailElement->src];
+                $item['thumbnail'] = $thumbnailElement->src;
             }
 
             // Fetch the article page to get the date and content
@@ -44,7 +45,21 @@ class A0NefesYazarlarBridge extends BridgeAbstract {
                 // Get date from the card-content time element
                 $dateElement = $articleHtml->find('div.post-time time', 0);
                 if ($dateElement) {
-                    $item['timestamp'] = $dateElement->datetime;
+                    $item['timestamp'] = strtotime($dateElement->datetime);
+                }
+
+                // Get article content
+                $contentElement = $articleHtml->find('div.post-content', 0);
+                if ($contentElement) {
+                    // Start content with thumbnail
+                    $contentHtml = '';
+                    if (isset($item['thumbnail'])) {
+                        $contentHtml = '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
+                    }
+                    
+                    // Add article content
+                    $contentHtml .= $contentElement->innertext;
+                    $item['content'] = $contentHtml;
                 }
             }
 
@@ -54,5 +69,4 @@ class A0NefesYazarlarBridge extends BridgeAbstract {
             $this->items[] = $item;
         }
     }
- 
-    } 
+}
