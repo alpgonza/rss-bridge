@@ -32,7 +32,7 @@ URI;
         $firstAnchor = $html->find('a', 0)
             or returnServerError('Could not find the proper HTML element.');
 
-        $url = $firstAnchor->href;
+        $url = 'https://www.bundestag.de' . $firstAnchor->href;
 
         // Get the actual page with the soft money donations
         $html = getSimpleHTMLDOMCached($url, self::CACHE_TIMEOUT);

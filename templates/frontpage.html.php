@@ -52,7 +52,7 @@
 
     <?php if ($admin_telegram): ?>
         <div>
-            Url: <a href="<?= e($admin_telegram) ?>"><?= e($admin_telegram) ?></a>
+            Telegram: <a href="<?= e($admin_telegram) ?>"><?= e($admin_telegram) ?></a>
         </div>
     <?php endif; ?>
 

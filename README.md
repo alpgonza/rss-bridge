@@ -29,7 +29,7 @@ Requires minimum PHP 7.4.
 |![Screenshot #3](/static/screenshot-3.png?raw=true)|![Screenshot #4](/static/screenshot-4.png?raw=true)|
 |![Screenshot #5](/static/screenshot-5.png?raw=true)|![Screenshot #6](/static/screenshot-6.png?raw=true)|
 
-## A subset of bridges (15/447)
+## A subset of bridges (16/447)
 
 * `CssSelectorBridge`: [Scrape out a feed using CSS selectors](https://rss-bridge.org/bridge01/#bridge-CssSelectorBridge)
 * `FeedMergeBridge`: [Combine multiple feeds into one](https://rss-bridge.org/bridge01/#bridge-FeedMergeBridge)
@@ -44,6 +44,7 @@ Requires minimum PHP 7.4.
 * `ThePirateBayBridge:` [Fetches torrents by search/user/category](https://rss-bridge.org/bridge01/#bridge-ThePirateBayBridge)
 * `TikTokBridge`: [Fetches posts by username](https://rss-bridge.org/bridge01/#bridge-TikTokBridge)
 * `TwitchBridge`: [Fetches videos from channel](https://rss-bridge.org/bridge01/#bridge-TwitchBridge)
+* `VkBridge`: [Fetches posts from user/group](https://rss-bridge.org/bridge01/#bridge-VkBridge)
 * `XPathBridge`: [Scrape out a feed using XPath expressions](https://rss-bridge.org/bridge01/#bridge-XPathBridge)
 * `YoutubeBridge`: [Fetches videos by username/channel/playlist/search](https://rss-bridge.org/bridge01/#bridge-YoutubeBridge)
 * `YouTubeCommunityTabBridge`: [Fetches posts from a channel's community tab](https://rss-bridge.org/bridge01/#bridge-YouTubeCommunityTabBridge)
@@ -71,27 +72,27 @@ useradd --shell /bin/bash --create-home rss-bridge
 
 cd /var/www
 
-# Create folder and change its ownership to rss-bridge
+# Create folder and change ownership
 mkdir rss-bridge && chown rss-bridge:rss-bridge rss-bridge/
 
-# Become rss-bridge
+# Become user
 su rss-bridge
 
-# Clone master branch into existing folder
+# Fetch latest master
 git clone https://github.com/RSS-Bridge/rss-bridge.git rss-bridge/
 cd rss-bridge
 
-# Copy over the default config (OPTIONAL)
+# Copy over the default config
 cp -v config.default.ini.php config.ini.php
 
-# Recursively give full permissions to user/owner
-chmod 700 --recursive ./
+# Give full permissions only to owner (rss-bridge)
+chmod 700 -R ./
 
-# Give read and execute to others on folder ./static
+# Give read and execute to others (nginx and php-fpm)
 chmod o+rx ./ ./static
 
-# Recursively give give read to others on folder ./static
-chmod o+r --recursive ./static
+# Give read to others (nginx)
+chmod o+r -R ./static
 ```
 
 Nginx config:
@@ -109,14 +110,17 @@ server {
     error_log /var/log/nginx/rss-bridge.error.log;
     log_not_found off;
 
-    # Intentionally not setting a root folder
+    # Intentionally not setting a root folder here
+
+    # autoindex is off by default but feels good to explicitly turn off
+    autoindex off;
 
     # Static content only served here
     location /static/ {
         alias /var/www/rss-bridge/static/;
     }
 
-    # Pass off to php-fpm only when location is EXACTLY == /
+    # Pass off to php-fpm when location is exactly /
     location = / {
         root /var/www/rss-bridge/;
         include snippets/fastcgi-php.conf;
@@ -124,12 +128,12 @@ server {
         fastcgi_pass unix:/run/php/rss-bridge.sock;
     }
 
-    # Reduce log noise
+    # Reduce spam
     location = /favicon.ico {
         access_log off;
     }
 
-    # Reduce log noise
+    # Reduce spam
     location = /robots.txt {
         access_log off;
     }
@@ -150,11 +154,11 @@ listen = /run/php/rss-bridge.sock
 listen.owner = www-data
 listen.group = www-data
 
-; Create 10 workers standing by to serve requests
+# Create 10 workers standing by to serve requests
 pm = static
 pm.max_children = 10
 
-; Respawn worker after 500 requests (workaround for memory leaks etc.)
+# Respawn worker after 500 requests (workaround for memory leaks etc.) 
 pm.max_requests = 500
 ```
 
@@ -460,6 +464,7 @@ See [CONTRIBUTORS.md](CONTRIBUTORS.md)
 
 RSS-Bridge uses caching to prevent services from banning your server for repeatedly updating feeds.
 The specific cache duration can be different between bridges.
+Cached files are deleted automatically after 24 hours.
 
 RSS-Bridge allows you to take full control over which bridges are displayed to the user.
 That way you can host your own RSS-Bridge service with your favorite collection of bridges!

@@ -327,7 +327,7 @@ abstract class BridgeAbstract
         return $this->cache->get($this->getShortName() . '_' . $key, $default);
     }
 
-    protected function saveCacheValue(string $key, $value, int $ttl = 86400)
+    protected function saveCacheValue(string $key, $value, int $ttl = null)
     {
         $this->cache->set($this->getShortName() . '_' . $key, $value, $ttl);
     }
