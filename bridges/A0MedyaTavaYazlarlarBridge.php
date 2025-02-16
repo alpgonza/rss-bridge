@@ -1,10 +1,6 @@
 <?php
 class A0MedyaTavaYazlarlarBridge extends BridgeAbstract {
-<<<<<<< HEAD
     const NAME = 'Medya Tava Yazarlar';
-=======
-    const NAME = 'Medyatava Yazarlar Bridge';
->>>>>>> origin/master
     const URI = 'https://www.medyatava.com/yazarlar';
     const DESCRIPTION = 'Returns the latest articles from Medyatava writers';
     const MAINTAINER = 'Alpgonza';

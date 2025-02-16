@@ -1,11 +1,7 @@
 <?php
 
 class A0NefesGazetesiBridge extends BridgeAbstract {
-<<<<<<< HEAD
     const NAME = 'Nefes Gazetesi';
-=======
-    const NAME = 'Nefes Gazetesi Bridge';
->>>>>>> origin/master
     const URI = 'https://www.nefes.com.tr';
     const DESCRIPTION = 'Returns the latest articles from Nefes Gazetesi';
     const MAINTAINER = 'Alpgonza';

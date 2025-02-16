@@ -1,11 +1,7 @@
 <?php
 
 class A0BloombergHTBridge extends BridgeAbstract {
-<<<<<<< HEAD
     const NAME = 'Bloomberg HT News';
-=======
-    const NAME = 'Bloomberg HT News Bridge';
->>>>>>> origin/master
     const URI = 'https://www.bloomberght.com/';
     const DESCRIPTION = 'Generates RSS feeds with full content from Bloomberg HT';
     const MAINTAINER = 'Alpgonza';

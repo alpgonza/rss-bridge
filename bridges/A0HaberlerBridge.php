@@ -1,17 +1,10 @@
 <?php
 
 class A0HaberlerBridge extends BridgeAbstract {
-<<<<<<< HEAD
     const NAME = 'Haberler.com';
     const URI = 'https://www.haberler.com/';
     const DESCRIPTION = 'Generates RSS feeds with full content for Haberler.com articles';
     const MAINTAINER = 'Alpgonza';
-=======
-    const NAME = 'Haberler.com Bridge';
-    const URI = 'https://www.haberler.com/';
-    const DESCRIPTION = 'Generates RSS feeds with full content for Haberler.com articles';
-    const MAINTAINER = 'YourName';
->>>>>>> origin/master
     const CACHE_TIMEOUT = 3600; // 1 hour
     const PARAMETERS = array();
 

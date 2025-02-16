@@ -1,10 +1,6 @@
 <?php
 class A0AppleMovieTrailersBridge extends BridgeAbstract {
-<<<<<<< HEAD
     const NAME = 'Apple Movie Trailers';
-=======
-    const NAME = 'Apple Movie Trailers Bridge';
->>>>>>> origin/master
     const URI = 'https://images.apple.com/trailers/home/rss/newtrailers.rss';
     const DESCRIPTION = 'Fetches the latest movie trailers from Apple Movie Trailers';
     const MAINTAINER = 'Alpgonza';
