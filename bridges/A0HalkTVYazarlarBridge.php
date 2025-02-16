@@ -1,5 +1,6 @@
 <?php
 class A0HalkTVYazarlarBridge extends BridgeAbstract {
+<<<<<<< HEAD
     const NAME = 'Halk TV Yazarlar';
     const URI = 'https://halktv.com.tr/yazar';
     const DESCRIPTION = 'Fetches articles from Halk TV Yazarlar';
@@ -13,14 +14,24 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
             ]
         ]
     ];
+=======
+    const NAME = 'Halk TV Yazarlar Bridge';
+    const URI = 'https://halktv.com.tr/yazar';
+    const DESCRIPTION = 'Fetches articles from Halk TV Yazarlar';
+    const MAINTAINER = 'Alpgonza';
+    const PARAMETERS = [];
+>>>>>>> origin/master
     const CACHE_TIMEOUT = 3600; // 1 hour
 
     public function collectData() {
         $html = getSimpleHTMLDOM(self::URI)
             or returnServerError('Could not request ' . self::URI);
 
+<<<<<<< HEAD
         $fetchFullContent = $this->getInput('fetch_full_content');
 
+=======
+>>>>>>> origin/master
         foreach ($html->find('section.item') as $element) {
             $item = [];
 
@@ -41,6 +52,7 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
             $thumbnailElement = $element->find('img', 0);
             $thumbnail = $thumbnailElement ? $thumbnailElement->src : '';
 
+<<<<<<< HEAD
             // If "Fetch Full Content" is enabled, fetch the article content
             $contentHtml = '';
             if ($fetchFullContent) {
@@ -68,6 +80,35 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
                     if ($dateElement) {
                         $item['timestamp'] = strtotime($dateElement->datetime);
                     }
+=======
+            // Fetch the article page to get the date and content
+            $articleHtml = getSimpleHTMLDOM($uri);
+            if ($articleHtml) {
+                // Get date
+                $dateElement = $articleHtml->find('div.content-date time', 0);
+                $timestamp = $dateElement ? $dateElement->datetime : null;
+                if ($timestamp) {
+                    $item['timestamp'] = strtotime($timestamp);
+                }
+
+                // Get article content
+                $contentElement = $articleHtml->find('div.text-content', 0);
+                if ($contentElement) {
+                    // Remove banner elements
+                    foreach ($contentElement->find('div[class*="banner"]') as $unwanted) {
+                        $unwanted->outertext = '';
+                    }
+
+                    // Start with thumbnail
+                    $contentHtml = '';
+                    if ($thumbnail) {
+                        $contentHtml = '<img src="' . $thumbnail . '" /><br/><br/>';
+                    }
+                    
+                    // Add article content
+                    $contentHtml .= $contentElement->innertext;
+                    $item['content'] = $contentHtml;
+>>>>>>> origin/master
                 }
             }
 
@@ -77,7 +118,10 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
             $item['author'] = $author;
             $item['enclosures'] = [$thumbnail];
             $item['uid'] = $uri;
+<<<<<<< HEAD
             $item['content'] = $fetchFullContent ? $contentHtml : '';
+=======
+>>>>>>> origin/master
 
             $this->items[] = $item;
         }

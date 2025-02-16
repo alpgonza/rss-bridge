@@ -1,10 +1,17 @@
 <?php
 
 class A0T24Bridge extends BridgeAbstract {
+<<<<<<< HEAD
     const NAME = 'T24 Haberler';
     const URI = 'https://t24.com.tr/';
     const DESCRIPTION = 'Generates RSS feeds with full content for T24 articles';
     const MAINTAINER = 'Alpgonza';
+=======
+    const NAME = 'T24 RSS Bridge';
+    const URI = 'https://t24.com.tr/';
+    const DESCRIPTION = 'Generates RSS feeds with full content for T24 articles';
+    const MAINTAINER = 'YourName';
+>>>>>>> origin/master
     const CACHE_TIMEOUT = 3600; // 1 hour
 
     public function collectData() {

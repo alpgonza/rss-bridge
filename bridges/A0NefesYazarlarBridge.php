@@ -1,6 +1,10 @@
 <?php
 class A0NefesYazarlarBridge extends BridgeAbstract {
+<<<<<<< HEAD
     const NAME = 'Nefes Yazarlar';
+=======
+    const NAME = 'Nefes Yazarlar Bridge';
+>>>>>>> origin/master
     const URI = 'https://www.nefes.com.tr/yazarlar';
     const DESCRIPTION = 'Returns the latest articles from Nefes writers';
     const MAINTAINER = 'Alpgonza';

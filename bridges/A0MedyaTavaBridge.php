@@ -1,7 +1,11 @@
 <?php
 
 class A0MedyaTavaBridge extends BridgeAbstract {
+<<<<<<< HEAD
     const NAME = 'Medya Tava';
+=======
+    const NAME = 'Medya Tava Bridge';
+>>>>>>> origin/master
     const URI = 'https://www.medyatava.com/';
     const DESCRIPTION = 'Generates RSS feeds for Medya Tava';
     const MAINTAINER = 'Alpgonza';
@@ -103,6 +107,10 @@ class A0MedyaTavaBridge extends BridgeAbstract {
         $category = $this->getInput('category');
         $categories = self::PARAMETERS['Global']['category']['values'];
         $categoryName = array_search($category, $categories);
+<<<<<<< HEAD
         return "Medya Tava Haberler" . ($categoryName ? " - {$categoryName}" : "");
+=======
+        return "Medya Tava Haberler Bridge" . ($categoryName ? " - {$categoryName}" : "");
+>>>>>>> origin/master
     }
 }

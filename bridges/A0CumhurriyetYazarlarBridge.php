@@ -1,7 +1,11 @@
 <?php
 
 class A0CumhurriyetYazarlarBridge extends BridgeAbstract {
+<<<<<<< HEAD
     const NAME = 'Cumhuriyet Yazarlar';
+=======
+    const NAME = 'Cumhuriyet Yazarlar Bridge';
+>>>>>>> origin/master
     const URI = 'https://www.cumhuriyet.com.tr/rss/1';
     const DESCRIPTION = 'Generates RSS feeds for Cumhuriyet writers';
     const MAINTAINER = 'Alpgonza';
@@ -64,6 +68,10 @@ class A0CumhurriyetYazarlarBridge extends BridgeAbstract {
     }
 
     public function getName() {
+<<<<<<< HEAD
         return 'Cumhuriyet Yazarlar';
+=======
+        return 'Cumhuriyet - Yazarlar';
+>>>>>>> origin/master
     }
 } 

@@ -1,6 +1,10 @@
 <?php
 class A0OksijenGazetesiBridge extends BridgeAbstract {
+<<<<<<< HEAD
     const NAME = 'Oksijen Gazetesi';
+=======
+    const NAME = 'Oksijen Gazetesi Bridge';
+>>>>>>> origin/master
     const URI = 'https://gazeteoksijen.com';
     const DESCRIPTION = 'Returns latest articles from Gazete Oksijen';
     const MAINTAINER = 'Alpgonza';
@@ -116,3 +120,7 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
         return "Oksijen Gazetesi" . ($categoryName ? " - {$categoryName}" : "");
     }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master

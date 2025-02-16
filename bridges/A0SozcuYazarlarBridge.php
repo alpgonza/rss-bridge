@@ -1,7 +1,11 @@
 <?php
 
 class A0SozcuYazarlarBridge extends BridgeAbstract {
+<<<<<<< HEAD
     const NAME = 'Sozcu Yazarlar';
+=======
+    const NAME = 'Sozcu Yazarlar Bridge';
+>>>>>>> origin/master
     const URI = 'https://www.sozcu.com.tr/feeds-rss-category-yazar';
     const DESCRIPTION = 'Generates RSS feeds for Sozcu writers';
     const MAINTAINER = 'Alpgonza';
@@ -70,7 +74,11 @@ class A0SozcuYazarlarBridge extends BridgeAbstract {
     }
 
     public function getName() {
+<<<<<<< HEAD
         return 'Sözcü Yazarlar';
+=======
+        return 'Sozcu - Yazarlar';
+>>>>>>> origin/master
     }
 }
 
