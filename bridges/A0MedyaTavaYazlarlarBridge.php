@@ -48,7 +48,7 @@ class A0MedyaTavaYazlarlarBridge extends BridgeAbstract {
                 }
                 
                 // Get the article content
-                $contentElement = $articleHtml->find('div.article-content', 0);
+                $contentElement = $articleHtml->find('div.content-text', 0);
                 if ($contentElement) {
                     $item['content'] = $contentElement->plaintext;
                 }
