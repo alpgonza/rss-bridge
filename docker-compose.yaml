@@ -1,0 +1,11 @@
+services:
+  rss-bridge:
+    image: rssbridge/rss-bridge:latest
+    container_name: rss-bridge
+    volumes:
+      - ./config:/config
+      - ./custom-bridges:/custom-bridges
+    ports:
+      - 4000:80
+    entrypoint: ["/bin/sh", "-c", "cp -r /custom-bridges/* /app/bridges/ 2>/dev/null || true && /app/docker-entrypoint.sh"]
+    restart: unless-stopped
