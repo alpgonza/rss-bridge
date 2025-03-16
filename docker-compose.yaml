@@ -5,7 +5,13 @@ services:
     volumes:
       - ./config:/config
       - ./custom-bridges:/custom-bridges
+    networks:
+      - freshrss
     ports:
       - 4000:80
     entrypoint: ["/bin/sh", "-c", "cp -r /custom-bridges/* /app/bridges/ 2>/dev/null || true && /app/docker-entrypoint.sh"]
     restart: unless-stopped
+
+networks:
+  freshrss:
+    external: true

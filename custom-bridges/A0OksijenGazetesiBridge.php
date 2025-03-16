@@ -91,7 +91,7 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
 
                     if ($fetchContent) {
                         // Get article content
-                        $contentElement = $articleHtml->find('article.space-y-4', 0);
+                        $contentElement = $articleHtml->find('article__content', 0);
                         if (!$contentElement) {
                             $contentElement = $articleHtml->find('article', 0); // Fallback to article without class
                         }
