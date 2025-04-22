@@ -40,43 +40,46 @@ class A0BloombergHTBridge extends BridgeAbstract {
 
             // Fetch the full article content from the linked page
             $linkedPage = getSimpleHTMLDOM($item['uri']);
-            if ($linkedPage) {
-                // Get article description from h2 elements and maintain bullet style
-                $descriptions = [];
-                foreach ($linkedPage->find('div.py-5 ul li h2.description') as $desc) {
-                    $descriptions[] = '<li class="relative" style="padding-left: 20px; margin-bottom: 1em; position: relative;">
-                        <span style="position: absolute; left: 0; top: 0.5em; width: 8px; height: 8px; background-color: black; display: inline-block;"></span>
-                        <strong>' . trim($desc->plaintext) . '</strong>
-                    </li>';
-                }
-                
-                // Combine descriptions into a styled unordered list
-                $articleDescription = !empty($descriptions) ? 
-                    '<ul style="list-style: none; margin: 1em 0;">' . implode('', $descriptions) . '</ul>' : '';
+            if (!$linkedPage) {
+                // Skip this article if the content could not be fetched
+                continue;
+            }
 
-                // Get article content paragraphs
-                $contentElements = $linkedPage->find('div.article-wrapper p');
-                if ($contentElements) {
-                    $contentHtml = '';
-                    foreach ($contentElements as $element) {
-                        $contentHtml .= '<p>' . $element->plaintext . '</p>';
-                    }
-                }
+            // Get article description from h2 elements and maintain bullet style
+            $descriptions = [];
+            foreach ($linkedPage->find('div.py-4 ul li h2.description') as $desc) {
+                $descriptions[] = '<li class="relative" style="padding-left: 20px; margin-bottom: 1em; position: relative;">
+                    <span style="position: absolute; left: 0; top: 0.5em; width: 8px; height: 8px; background-color: black; display: inline-block;"></span>
+                    <strong>' . trim($desc->plaintext) . '</strong>
+                </li>';
+            }
+            
+            // Combine descriptions into a styled unordered list
+            $articleDescription = !empty($descriptions) ? 
+                '<ul style="list-style: none; margin: 1em 0;">' . implode('', $descriptions) . '</ul>' : '';
 
-                // Fix: Update image selector to match actual HTML structure
-                $imageElement = $linkedPage->find('div.aspect-video img', 0);
-                $imageHtml = $imageElement ? '<img src="' . $imageElement->getAttribute('data-src') . '" alt="News Image"><br>' : '';
-
-                // Combine all content elements
-                $fullContent = $articleDescription . $imageHtml .$contentHtml;
-                if (!empty($fullContent)) {
-                    $item['content'] = $fullContent;
+            // Get article content paragraphs
+            $contentElements = $linkedPage->find('div.article-wrapper p');
+            if ($contentElements) {
+                $contentHtml = '';
+                foreach ($contentElements as $element) {
+                    $contentHtml .= '<p>' . $element->plaintext . '</p>';
                 }
+            }
 
-                // Add the image as an enclosure
-                if ($imageElement) {
-                    $item['enclosures'][] = $imageElement->getAttribute('data-src');
-                }
+            // Fix: Update image selector to match actual HTML structure
+            $imageElement = $linkedPage->find('div.aspect-video img', 0);
+            $imageHtml = $imageElement ? '<img src="' . $imageElement->getAttribute('src') . '" alt="News Image"><br>' : '';
+
+            // Combine all content elements
+            $fullContent = $articleDescription . $imageHtml . $contentHtml;
+            if (!empty($fullContent)) {
+                $item['content'] = $fullContent;
+            }
+
+            // Add the image as an enclosure
+            if ($imageElement) {
+                $item['enclosures'][] = $imageElement->getAttribute('data-src');
             }
 
             $this->items[] = $item;

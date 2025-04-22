@@ -35,6 +35,10 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
         $category = $this->getInput('category');
         $url = self::URI . $category;
         $html = getSimpleHTMLDOM($url);
+        if (!$html) {
+            // Skip processing if the main page could not be fetched
+            return;
+        }
 
         foreach ($html->find('article[class^="jeg_post"]') as $element) {
             $item = [];
@@ -46,7 +50,13 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
             $item['title'] = $titleElement->plaintext;
             $item['author'] = $element->find('div.jeg_meta_author a', 0)->plaintext ?? '';
 
+            // Fetch the article page
             $articleHtml = getSimpleHTMLDOM($item['uri']);
+            if (!$articleHtml) {
+                // Skip this article if the content could not be fetched
+                continue;
+            }
+
             $description = $articleHtml->find('h2.jeg_post_subtitle', 0);
             $articleText = $articleHtml->find('div[class^="content-inner"] p');
 

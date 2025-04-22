@@ -42,8 +42,20 @@ class A0TennisComNewsBridge extends BridgeAbstract {
             $item['enclosures'] = [$thumbnail];
             $item['thumbnail'] = $thumbnail;
 
+            // Fetch the full article content
+            $articleHtml = getSimpleHTMLDOM($item['uri']);
+            if (!$articleHtml) {
+                // Skip this article if the content could not be fetched
+                continue;
+            }
+
             // Prepare content with description followed by thumbnail
-            $item['content'] = '<p>' . $description . '</p><img src="' . $thumbnail . '" />';
+            $contentElement = $articleHtml->find('div.article-content', 0);
+            if ($contentElement) {
+                $item['content'] = '<p>' . $description . '</p><img src="' . $thumbnail . '" /><br>' . $contentElement->innertext;
+            } else {
+                $item['content'] = '<p>' . $description . '</p><img src="' . $thumbnail . '" />';
+            }
 
             $item['uid'] = $item['uri'];
             $this->items[] = $item;

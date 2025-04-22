@@ -41,26 +41,29 @@ class A0NefesYazarlarBridge extends BridgeAbstract {
 
             // Fetch the article page to get the date and content
             $articleHtml = getSimpleHTMLDOM($item['uri']);
-            if ($articleHtml) {
-                // Get date from the card-content time element
-                $dateElement = $articleHtml->find('div.post-time time', 0);
-                if ($dateElement) {
-                    $item['timestamp'] = strtotime($dateElement->datetime);
-                }
+            if (!$articleHtml) {
+                // Skip this article if the content could not be fetched
+                continue;
+            }
 
-                // Get article content
-                $contentElement = $articleHtml->find('div.post-content', 0);
-                if ($contentElement) {
-                    // Start content with thumbnail
-                    $contentHtml = '';
-                    if (isset($item['thumbnail'])) {
-                        $contentHtml = '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
-                    }
-                    
-                    // Add article content
-                    $contentHtml .= $contentElement->innertext;
-                    $item['content'] = $contentHtml;
+            // Get date from the card-content time element
+            $dateElement = $articleHtml->find('div.post-time time', 0);
+            if ($dateElement) {
+                $item['timestamp'] = strtotime($dateElement->datetime);
+            }
+
+            // Get article content
+            $contentElement = $articleHtml->find('div.post-content', 0);
+            if ($contentElement) {
+                // Start content with thumbnail
+                $contentHtml = '';
+                if (isset($item['thumbnail'])) {
+                    $contentHtml = '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
                 }
+                
+                // Add article content
+                $contentHtml .= $contentElement->innertext;
+                $item['content'] = $contentHtml;
             }
 
             // Set unique ID using article URL

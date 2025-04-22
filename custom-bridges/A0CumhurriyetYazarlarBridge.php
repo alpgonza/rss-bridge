@@ -37,24 +37,27 @@ class A0CumhurriyetYazarlarBridge extends BridgeAbstract {
 
             // Fetch the article page for content and author
             $articlePage = getSimpleHTMLDOM($item['uri']);
-            if ($articlePage) {
-                // Get author
-                $authorElement = $articlePage->find('div.adi', 0);
-                if ($authorElement) {
-                    $item['author'] = trim($authorElement->plaintext);
-                }
+            if (!$articlePage) {
+                // Skip this article if the content could not be fetched
+                continue;
+            }
 
-                // Get content
-                $contentElement = $articlePage->find('div.haberMetni', 0);
-                if ($contentElement) {
-                    // Remove unwanted elements
-                    foreach ($contentElement->find('p[class*="inad-text"]') as $unwanted) {
-                        $unwanted->outertext = '';
-                    }
-                    
-                    // Append article content to thumbnail
-                    $contentHtml .= $contentElement->innertext;
+            // Get author
+            $authorElement = $articlePage->find('div.adi', 0);
+            if ($authorElement) {
+                $item['author'] = trim($authorElement->plaintext);
+            }
+
+            // Get content
+            $contentElement = $articlePage->find('div.haberMetni', 0);
+            if ($contentElement) {
+                // Remove unwanted elements
+                foreach ($contentElement->find('p[class*="inad-text"]') as $unwanted) {
+                    $unwanted->outertext = '';
                 }
+                
+                // Append article content to thumbnail
+                $contentHtml .= $contentElement->innertext;
             }
 
             $item['content'] = $contentHtml;
@@ -66,4 +69,4 @@ class A0CumhurriyetYazarlarBridge extends BridgeAbstract {
     public function getName() {
         return 'Cumhuriyet Yazarlar';
     }
-} 
+}

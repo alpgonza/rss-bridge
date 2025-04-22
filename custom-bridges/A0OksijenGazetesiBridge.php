@@ -76,32 +76,35 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
 
             // Fetch article page content or only description and thumbnail
             $articleHtml = getSimpleHTMLDOM($item['uri']);
-            if ($articleHtml) {
-                // Get description
-                $descElement = $articleHtml->find('div[class^="news__header"] div', 0);
-                if ($descElement) {
-                    $description = html_entity_decode(trim($descElement->plaintext), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    $item['description'] = $description;
+            if (!$articleHtml) {
+                // Skip this article if the content could not be fetched
+                continue;
+            }
 
-                    // Prepare content
-                    $contentHtml = '<p>' . $description . '</p><br/>';
-                    if (isset($item['thumbnail'])) {
-                        $contentHtml .= '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
-                    }
+            // Get description
+            $descElement = $articleHtml->find('div[class^="news__header"] div', 0);
+            if ($descElement) {
+                $description = html_entity_decode(trim($descElement->plaintext), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $item['description'] = $description;
 
-                    if ($fetchContent) {
-                        // Get article content
-                        $contentElement = $articleHtml->find('article__content', 0);
-                        if (!$contentElement) {
-                            $contentElement = $articleHtml->find('article', 0); // Fallback to article without class
-                        }
-                        if ($contentElement) {
-                            $contentHtml .= $contentElement->innertext;
-                        }
-                    }
-
-                    $item['content'] = $contentHtml;
+                // Prepare content
+                $contentHtml = '<p>' . $description . '</p><br/>';
+                if (isset($item['thumbnail'])) {
+                    $contentHtml .= '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
                 }
+
+                if ($fetchContent) {
+                    // Get article content
+                    $contentElement = $articleHtml->find('article__content', 0);
+                    if (!$contentElement) {
+                        $contentElement = $articleHtml->find('article', 0); // Fallback to article without class
+                    }
+                    if ($contentElement) {
+                        $contentHtml .= $contentElement->innertext;
+                    }
+                }
+
+                $item['content'] = $contentHtml;
             }
 
             $item['uid'] = $item['uri'];

@@ -45,29 +45,32 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
             $contentHtml = '';
             if ($fetchFullContent) {
                 $articleHtml = getSimpleHTMLDOM($uri);
-                if ($articleHtml) {
-                    // Extract article content
-                    $contentElement = $articleHtml->find('div.text-content', 0);
-                    if ($contentElement) {
-                        // Remove unwanted elements (e.g., banners)
-                        foreach ($contentElement->find('div[class*="banner"]') as $unwanted) {
-                            $unwanted->outertext = '';
-                        }
+                if (!$articleHtml) {
+                    // Skip this article if the content could not be fetched
+                    continue;
+                }
 
-                        // Start with thumbnail if available
-                        if ($thumbnail) {
-                            $contentHtml = '<img src="' . $thumbnail . '" /><br/><br/>';
-                        }
-
-                        // Add article content
-                        $contentHtml .= $contentElement->innertext;
+                // Extract article content
+                $contentElement = $articleHtml->find('div.text-content', 0);
+                if ($contentElement) {
+                    // Remove unwanted elements (e.g., banners)
+                    foreach ($contentElement->find('div[class*="banner"]') as $unwanted) {
+                        $unwanted->outertext = '';
                     }
 
-                    // Get article date
-                    $dateElement = $articleHtml->find('div.content-date time', 0);
-                    if ($dateElement) {
-                        $item['timestamp'] = strtotime($dateElement->datetime);
+                    // Start with thumbnail if available
+                    if ($thumbnail) {
+                        $contentHtml = '<img src="' . $thumbnail . '" /><br/><br/>';
                     }
+
+                    // Add article content
+                    $contentHtml .= $contentElement->innertext;
+                }
+
+                // Get article date
+                $dateElement = $articleHtml->find('div.content-date time', 0);
+                if ($dateElement) {
+                    $item['timestamp'] = strtotime($dateElement->datetime);
                 }
             }
 

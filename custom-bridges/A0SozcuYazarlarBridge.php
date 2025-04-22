@@ -32,36 +32,39 @@ class A0SozcuYazarlarBridge extends BridgeAbstract {
                 $item['enclosures'][] = $item['thumbnail'];
             }
 
-            // Fetch the article page for content, author and title
+            // Fetch the article page for content, author, and title
             $articlePage = getSimpleHTMLDOM($item['uri']);
-            if ($articlePage) {
-                // Get author
-                $authorElement = $articlePage->find('div.content-meta-name', 0);
-                if ($authorElement) {
-                    $item['author'] = html_entity_decode(trim($authorElement->plaintext), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                }
+            if (!$articlePage) {
+                // Skip this article if the content could not be fetched
+                continue;
+            }
 
-                // Get title
-                $titleElement = $articlePage->find('h1.author-content-title', 0);
-                if ($titleElement) {
-                    $articleTitle = html_entity_decode(trim($titleElement->plaintext), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    // Combine author and title
-                    $item['title'] = $item['author'] . ' : ' . $articleTitle;
-                }
+            // Get author
+            $authorElement = $articlePage->find('div.content-meta-name', 0);
+            if ($authorElement) {
+                $item['author'] = html_entity_decode(trim($authorElement->plaintext), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
 
-                // Get content
-                $contentElement = $articlePage->find('div.article-body', 0);
-                if ($contentElement) {
-                    // Start content with thumbnail
-                    $contentHtml = '';
-                    if (isset($item['thumbnail'])) {
-                        $contentHtml = '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
-                    }
-                    
-                    // Add article content
-                    $contentHtml .= $contentElement->innertext;
-                    $item['content'] = $contentHtml;
+            // Get title
+            $titleElement = $articlePage->find('h1.author-content-title', 0);
+            if ($titleElement) {
+                $articleTitle = html_entity_decode(trim($titleElement->plaintext), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                // Combine author and title
+                $item['title'] = $item['author'] . ' : ' . $articleTitle;
+            }
+
+            // Get content
+            $contentElement = $articlePage->find('div.article-body', 0);
+            if ($contentElement) {
+                // Start content with thumbnail
+                $contentHtml = '';
+                if (isset($item['thumbnail'])) {
+                    $contentHtml = '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
                 }
+                
+                // Add article content
+                $contentHtml .= $contentElement->innertext;
+                $item['content'] = $contentHtml;
             }
 
             $item['uid'] = $item['uri'];
