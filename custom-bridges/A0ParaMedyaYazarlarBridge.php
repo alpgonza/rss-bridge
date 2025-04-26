@@ -34,7 +34,7 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
     public function collectData() {
         $category = $this->getInput('category');
         $url = self::URI . $category;
-        $html = getSimpleHTMLDOM($url);
+        $html = @getSimpleHTMLDOM($url);
         if (!$html) {
             // Skip processing if the main page could not be fetched
             return;
@@ -51,10 +51,18 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
             $item['author'] = $element->find('div.jeg_meta_author a', 0)->plaintext ?? '';
 
             // Fetch the article page
-            $articleHtml = getSimpleHTMLDOM($item['uri']);
+            $articleHtml = @getSimpleHTMLDOM($item['uri']);
             if (!$articleHtml) {
                 // Skip this article if the content could not be fetched
                 continue;
+            }
+
+            // Check for SSL or cURL errors
+            if (isset($articleHtml->innertext) && 
+                (strpos($articleHtml->innertext, 'error') !== false || 
+                 strpos($articleHtml->innertext, 'SSL') !== false || 
+                 strpos($articleHtml->innertext, 'cURL') !== false)) {
+                continue; // Skip if the page contains error information
             }
 
             $description = $articleHtml->find('h2.jeg_post_subtitle', 0);

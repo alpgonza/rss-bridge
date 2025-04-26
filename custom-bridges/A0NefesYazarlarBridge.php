@@ -40,10 +40,18 @@ class A0NefesYazarlarBridge extends BridgeAbstract {
             }
 
             // Fetch the article page to get the date and content
-            $articleHtml = getSimpleHTMLDOM($item['uri']);
+            $articleHtml = @getSimpleHTMLDOM($item['uri']);
             if (!$articleHtml) {
                 // Skip this article if the content could not be fetched
                 continue;
+            }
+
+            // Check for SSL or cURL errors
+            if (isset($articleHtml->innertext) && 
+                (strpos($articleHtml->innertext, 'error') !== false || 
+                 strpos($articleHtml->innertext, 'SSL') !== false || 
+                 strpos($articleHtml->innertext, 'cURL') !== false)) {
+                continue; // Skip if the page contains error information
             }
 
             // Get date from the card-content time element

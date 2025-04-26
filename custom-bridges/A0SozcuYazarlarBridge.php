@@ -33,10 +33,18 @@ class A0SozcuYazarlarBridge extends BridgeAbstract {
             }
 
             // Fetch the article page for content, author, and title
-            $articlePage = getSimpleHTMLDOM($item['uri']);
+            $articlePage = @getSimpleHTMLDOM($item['uri']);
             if (!$articlePage) {
                 // Skip this article if the content could not be fetched
                 continue;
+            }
+
+            // Check for SSL or cURL errors
+            if (isset($articlePage->innertext) && 
+                (strpos($articlePage->innertext, 'error') !== false || 
+                 strpos($articlePage->innertext, 'SSL') !== false || 
+                 strpos($articlePage->innertext, 'cURL') !== false)) {
+                continue; // Skip if the page contains error information
             }
 
             // Get author

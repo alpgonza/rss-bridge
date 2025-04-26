@@ -19,16 +19,18 @@ class A0FotoMacBridge extends FeedExpander {
 			],
 		]);
 
-		$xml = file_get_contents(self::FEED_URL, false, $context);
+		// Fetch the RSS feed
+		$xml = @file_get_contents(self::FEED_URL, false, $context);
 
 		if ($xml === false) {
-			returnServerError('Could not fetch feed.');
+			returnServerError('Could not fetch feed. Possible SSL or network issue.');
 		}
 
-		$feed = simplexml_load_string($xml);
+		// Parse the XML feed
+		$feed = @simplexml_load_string($xml);
 
 		if ($feed === false) {
-			returnServerError('Could not parse XML.');
+			returnServerError('Could not parse XML. The feed might be malformed.');
 		}
 
 		foreach ($feed->channel->item as $item) {

@@ -56,10 +56,18 @@ class A0NefesGazetesiBridge extends BridgeAbstract {
 
             if ($fetchContent) {
                 // Full fetch logic
-                $articleHtml = getSimpleHTMLDOM($item['uri']);
+                $articleHtml = @getSimpleHTMLDOM($item['uri']);
                 if (!$articleHtml) {
                     // Skip this article if the content could not be fetched
                     continue;
+                }
+
+                // Check for SSL or cURL errors
+                if (isset($articleHtml->innertext) && 
+                    (strpos($articleHtml->innertext, 'error') !== false || 
+                     strpos($articleHtml->innertext, 'SSL') !== false || 
+                     strpos($articleHtml->innertext, 'cURL') !== false)) {
+                    continue; // Skip if the page contains error information
                 }
 
                 if ($category === 'yazarlar') {
@@ -104,7 +112,7 @@ class A0NefesGazetesiBridge extends BridgeAbstract {
                 }
             } else {
                 // Fetch only description and thumbnail when checkbox is unchecked
-                $articleHtml = getSimpleHTMLDOM($item['uri']);
+                $articleHtml = @getSimpleHTMLDOM($item['uri']);
                 if ($articleHtml) {
                     $descElement = $articleHtml->find('header h2', 0);
                     if ($descElement) {

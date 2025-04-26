@@ -45,7 +45,7 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
             $html->find('div.col div[class*="card"]')
         );
 
-        foreach($articles as $article) {
+        foreach ($articles as $article) {
             $item = [];
 
             // Get title and link
@@ -57,7 +57,7 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
             if (!str_starts_with($articleUrl, 'https://')) {
                 $articleUrl = self::URI . $articleUrl;
             }
-            
+
             // Skip if we've already processed this URL
             if (in_array($articleUrl, $processedUrls)) {
                 continue;
@@ -75,10 +75,18 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
             }
 
             // Fetch article page content or only description and thumbnail
-            $articleHtml = getSimpleHTMLDOM($item['uri']);
+            $articleHtml = @getSimpleHTMLDOM($item['uri']);
             if (!$articleHtml) {
                 // Skip this article if the content could not be fetched
                 continue;
+            }
+
+            // Check for SSL or cURL errors
+            if (isset($articleHtml->innertext) && 
+                (strpos($articleHtml->innertext, 'error') !== false || 
+                 strpos($articleHtml->innertext, 'SSL') !== false || 
+                 strpos($articleHtml->innertext, 'cURL') !== false)) {
+                continue; // Skip if the page contains error information
             }
 
             // Get description

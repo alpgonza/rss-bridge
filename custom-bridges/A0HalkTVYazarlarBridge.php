@@ -44,10 +44,18 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
             // If "Fetch Full Content" is enabled, fetch the article content
             $contentHtml = '';
             if ($fetchFullContent) {
-                $articleHtml = getSimpleHTMLDOM($uri);
+                $articleHtml = @getSimpleHTMLDOM($uri);
                 if (!$articleHtml) {
                     // Skip this article if the content could not be fetched
                     continue;
+                }
+
+                // Check for SSL or cURL errors
+                if (isset($articleHtml->innertext) && 
+                    (strpos($articleHtml->innertext, 'error') !== false || 
+                     strpos($articleHtml->innertext, 'SSL') !== false || 
+                     strpos($articleHtml->innertext, 'cURL') !== false)) {
+                    continue; // Skip if the page contains error information
                 }
 
                 // Extract article content
