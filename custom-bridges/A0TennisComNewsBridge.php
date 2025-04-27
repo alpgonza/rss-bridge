@@ -7,8 +7,17 @@ class A0TennisComNewsBridge extends BridgeAbstract {
     const CACHE_TIMEOUT = 3600; // 1 hour
 
     public function collectData() {
-        $html = getSimpleHTMLDOM(self::URI)
-            or returnServerError('Could not request Tennis.com');
+        // Fetch the main page
+        try {
+            $html = getSimpleHTMLDOM(self::URI);
+            if (!$html) {
+                // Silently return if the main page couldn't be fetched
+                return;
+            }
+        } catch (Exception $e) {
+            // Log the error if needed, but don't trigger an error feed
+            return;
+        }
 
         // Find articles under div with class "d3-l-col__col-4"
         foreach ($html->find('div.d3-l-col__col-4') as $article) {
@@ -43,13 +52,14 @@ class A0TennisComNewsBridge extends BridgeAbstract {
             $item['thumbnail'] = $thumbnail;
 
             // Fetch the full article content
-            $articleHtml = @getSimpleHTMLDOM($item['uri']);
+            try {
+                $articleHtml = getSimpleHTMLDOM($item['uri']);
             if (!$articleHtml) {
                 // Skip this article if the content could not be fetched
                 continue;
             }
 
-            // Check for SSL or cURL errors
+                // Check for SSL or cURL errors or generic error pages
             if (isset($articleHtml->innertext) && 
                 (strpos($articleHtml->innertext, 'error') !== false || 
                  strpos($articleHtml->innertext, 'SSL') !== false || 
@@ -63,6 +73,10 @@ class A0TennisComNewsBridge extends BridgeAbstract {
                 $item['content'] = '<p>' . $description . '</p><img src="' . $thumbnail . '" /><br>' . $contentElement->innertext;
             } else {
                 $item['content'] = '<p>' . $description . '</p><img src="' . $thumbnail . '" />';
+            }
+            } catch (Exception $e) {
+                // Skip this article if an HTTP error (e.g., 500) occurs
+                continue;
             }
 
             $item['uid'] = $item['uri'];

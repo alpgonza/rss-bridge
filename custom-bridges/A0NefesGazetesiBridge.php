@@ -31,8 +31,18 @@ class A0NefesGazetesiBridge extends BridgeAbstract {
         $fetchContent = $this->getInput('fetch_content');
         $url = self::URI . '/' . $category;
 
-        $html = getSimpleHTMLDOM($url)
-            or returnServerError('Could not request ' . $url);
+        // Fetch the main page
+        try {
+            $html = getSimpleHTMLDOM($url);
+            if (!$html) {
+                // Silently return if the main page couldn't be fetched
+                return;
+            }
+        } catch (Exception $e) {
+            // Log the error for debugging (optional)
+            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching main page ' . $url . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+            return; // Silently return to avoid error feed
+        }
 
         foreach ($html->find('article[class*="card"]') as $element) {
             $item = [];
@@ -56,7 +66,8 @@ class A0NefesGazetesiBridge extends BridgeAbstract {
 
             if ($fetchContent) {
                 // Full fetch logic
-                $articleHtml = @getSimpleHTMLDOM($item['uri']);
+                try {
+                    $articleHtml = getSimpleHTMLDOM($item['uri']);
                 if (!$articleHtml) {
                     // Skip this article if the content could not be fetched
                     continue;
@@ -110,10 +121,28 @@ class A0NefesGazetesiBridge extends BridgeAbstract {
                     $contentHtml .= $contentElement->innertext;
                     $item['content'] = $contentHtml;
                 }
+                } catch (Exception $e) {
+                    // Skip this article if an HTTP error (e.g., 500) occurs
+                    // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+                    continue;
+                }
             } else {
                 // Fetch only description and thumbnail when checkbox is unchecked
-                $articleHtml = @getSimpleHTMLDOM($item['uri']);
-                if ($articleHtml) {
+                try {
+                    $articleHtml = getSimpleHTMLDOM($item['uri']);
+                    if (!$articleHtml) {
+                        // Skip this article if the content could not be fetched
+                        continue;
+                    }
+
+                    // Check for SSL or cURL errors
+                    if (isset($articleHtml->innertext) &&
+                        (strpos($articleHtml->innertext, 'error') !== false ||
+                         strpos($articleHtml->innertext, 'SSL') !== false ||
+                         strpos($articleHtml->innertext, 'cURL') !== false)) {
+                        continue; // Skip if the page contains error information
+                    }
+
                     $descElement = $articleHtml->find('header h2', 0);
                     if ($descElement) {
                         $description = html_entity_decode(trim($descElement->plaintext), ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -126,6 +155,10 @@ class A0NefesGazetesiBridge extends BridgeAbstract {
                         }
                         $item['content'] = $contentHtml;
                     }
+                } catch (Exception $e) {
+                    // Skip this article if an HTTP error (e.g., 500) occurs
+                    // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+                    continue;
                 }
             }
 
@@ -141,4 +174,3 @@ class A0NefesGazetesiBridge extends BridgeAbstract {
         return "Nefes Gazetesi" . ($categoryName ? " - {$categoryName}" : "");
     }
 }
-

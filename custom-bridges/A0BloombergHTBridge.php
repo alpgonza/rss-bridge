@@ -10,8 +10,19 @@ class A0BloombergHTBridge extends BridgeAbstract {
 
     public function collectData() {
         $rssFeedUrl = self::URI . 'rss';
-        $rssContent = getSimpleHTMLDOM($rssFeedUrl)
-            or returnServerError('Could not fetch Bloomberg HT RSS feed');
+
+        // Fetch the RSS feed
+        try {
+            $rssContent = getSimpleHTMLDOM($rssFeedUrl);
+            if (!$rssContent) {
+                // Silently return if the RSS feed couldn't be fetched
+                return;
+            }
+        } catch (Exception $e) {
+            // Log the error for debugging (optional)
+            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching RSS: ' . $e->getMessage() . "\n", FILE_APPEND);
+            return; // Silently return to avoid error feed
+        }
 
         // Parse each <item> element from the RSS feed
         foreach ($rssContent->find('item') as $rssItem) {
@@ -39,11 +50,20 @@ class A0BloombergHTBridge extends BridgeAbstract {
             }
 
             // Fetch the full article content from the linked page
+            try {
             $linkedPage = getSimpleHTMLDOM($item['uri']);
             if (!$linkedPage) {
                 // Skip this article if the content could not be fetched
                 continue;
             }
+
+                // Check for error pages (e.g., SSL or server errors)
+                if (isset($linkedPage->innertext) &&
+                    (strpos($linkedPage->innertext, 'error') !== false ||
+                     strpos($linkedPage->innertext, 'SSL') !== false ||
+                     strpos($linkedPage->innertext, 'cURL') !== false)) {
+                    continue; // Skip if the page contains error information
+                }
 
             // Get article description from h2 elements and maintain bullet style
             $descriptions = [];
@@ -60,8 +80,8 @@ class A0BloombergHTBridge extends BridgeAbstract {
 
             // Get article content paragraphs
             $contentElements = $linkedPage->find('div.article-wrapper p');
-            if ($contentElements) {
                 $contentHtml = '';
+                if ($contentElements) {
                 foreach ($contentElements as $element) {
                     $contentHtml .= '<p>' . $element->plaintext . '</p>';
                 }
@@ -79,11 +99,15 @@ class A0BloombergHTBridge extends BridgeAbstract {
 
             // Add the image as an enclosure
             if ($imageElement) {
-                $item['enclosures'][] = $imageElement->getAttribute('data-src');
+                    $item['enclosures'][] = $imageElement->getAttribute('data-src') ?: $imageElement->getAttribute('src');
+                }
+            } catch (Exception $e) {
+                // Skip this article if an HTTP error (e.g., 500) occurs
+                // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+                continue;
             }
 
             $this->items[] = $item;
         }
     }
 }
-

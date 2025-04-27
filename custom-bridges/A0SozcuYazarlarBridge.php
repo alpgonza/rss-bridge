@@ -8,8 +8,18 @@ class A0SozcuYazarlarBridge extends BridgeAbstract {
     const CACHE_TIMEOUT = 3600; // 1 hour
 
     public function collectData() {
-        $xml = simplexml_load_file(self::URI)
-            or returnServerError('Could not request ' . self::URI);
+        // Fetch the XML feed
+        try {
+            $xml = simplexml_load_file(self::URI);
+            if (!$xml) {
+                // Silently return if the XML feed couldn't be fetched
+                return;
+            }
+        } catch (Exception $e) {
+            // Log the error for debugging (optional)
+            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching XML: ' . $e->getMessage() . "\n", FILE_APPEND);
+            return; // Silently return to avoid error feed
+        }
 
         // Register the media namespace
         $xml->registerXPathNamespace('media', 'http://search.yahoo.com/mrss/');
@@ -33,7 +43,8 @@ class A0SozcuYazarlarBridge extends BridgeAbstract {
             }
 
             // Fetch the article page for content, author, and title
-            $articlePage = @getSimpleHTMLDOM($item['uri']);
+            try {
+                $articlePage = getSimpleHTMLDOM($item['uri']);
             if (!$articlePage) {
                 // Skip this article if the content could not be fetched
                 continue;
@@ -74,6 +85,11 @@ class A0SozcuYazarlarBridge extends BridgeAbstract {
                 $contentHtml .= $contentElement->innertext;
                 $item['content'] = $contentHtml;
             }
+            } catch (Exception $e) {
+                // Skip this article if an HTTP error (e.g., 500) occurs
+                // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+                continue;
+            }
 
             $item['uid'] = $item['uri'];
             $this->items[] = $item;
@@ -84,4 +100,3 @@ class A0SozcuYazarlarBridge extends BridgeAbstract {
         return 'Sözcü Yazarlar';
     }
 }
-

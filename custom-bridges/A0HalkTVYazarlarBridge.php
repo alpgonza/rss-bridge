@@ -16,8 +16,18 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
     const CACHE_TIMEOUT = 3600; // 1 hour
 
     public function collectData() {
-        $html = getSimpleHTMLDOM(self::URI)
-            or returnServerError('Could not request ' . self::URI);
+        // Fetch the main page
+        try {
+            $html = getSimpleHTMLDOM(self::URI);
+            if (!$html) {
+                // Silently return if the main page couldn't be fetched
+                return;
+            }
+        } catch (Exception $e) {
+            // Log the error for debugging (optional)
+            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching main page: ' . $e->getMessage() . "\n", FILE_APPEND);
+            return; // Silently return to avoid error feed
+        }
 
         $fetchFullContent = $this->getInput('fetch_full_content');
 
@@ -44,13 +54,14 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
             // If "Fetch Full Content" is enabled, fetch the article content
             $contentHtml = '';
             if ($fetchFullContent) {
-                $articleHtml = @getSimpleHTMLDOM($uri);
+                try {
+                    $articleHtml = getSimpleHTMLDOM($uri);
                 if (!$articleHtml) {
                     // Skip this article if the content could not be fetched
                     continue;
                 }
 
-                // Check for SSL or cURL errors
+                    // Check for error pages (e.g., SSL or server errors)
                 if (isset($articleHtml->innertext) && 
                     (strpos($articleHtml->innertext, 'error') !== false || 
                      strpos($articleHtml->innertext, 'SSL') !== false || 
@@ -80,13 +91,18 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
                 if ($dateElement) {
                     $item['timestamp'] = strtotime($dateElement->datetime);
                 }
+                } catch (Exception $e) {
+                    // Skip this article if an HTTP error (e.g., 500) occurs
+                    // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $uri . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+                    continue;
+                }
             }
 
             // Populate item data
             $item['title'] = $author . ' : ' . $title;
             $item['uri'] = $uri;
             $item['author'] = $author;
-            $item['enclosures'] = [$thumbnail];
+            $item['enclosures'] = $thumbnail ? [$thumbnail] : [];
             $item['uid'] = $uri;
             $item['content'] = $fetchFullContent ? $contentHtml : '';
 

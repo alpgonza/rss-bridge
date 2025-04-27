@@ -33,8 +33,18 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
         $fetchContent = $this->getInput('fetch_content');
         $url = self::URI . '/' . $category;
 
-        $html = getSimpleHTMLDOM($url)
-            or returnServerError('Could not request ' . $url);
+        // Fetch the main page
+        try {
+            $html = getSimpleHTMLDOM($url);
+            if (!$html) {
+                // Silently return if the main page couldn't be fetched
+                return;
+            }
+        } catch (Exception $e) {
+            // Log the error for debugging (optional)
+            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching main page ' . $url . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+            return; // Silently return to avoid error feed
+        }
 
         // Track processed URLs to avoid duplicates
         $processedUrls = [];
@@ -75,7 +85,8 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
             }
 
             // Fetch article page content or only description and thumbnail
-            $articleHtml = @getSimpleHTMLDOM($item['uri']);
+            try {
+                $articleHtml = getSimpleHTMLDOM($item['uri']);
             if (!$articleHtml) {
                 // Skip this article if the content could not be fetched
                 continue;
@@ -113,6 +124,11 @@ class A0OksijenGazetesiBridge extends BridgeAbstract {
                 }
 
                 $item['content'] = $contentHtml;
+            }
+            } catch (Exception $e) {
+                // Skip this article if an HTTP error (e.g., 500) occurs
+                // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+                continue;
             }
 
             $item['uid'] = $item['uri'];

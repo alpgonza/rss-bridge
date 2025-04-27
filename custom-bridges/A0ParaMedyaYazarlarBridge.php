@@ -34,10 +34,18 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
     public function collectData() {
         $category = $this->getInput('category');
         $url = self::URI . $category;
-        $html = @getSimpleHTMLDOM($url);
+
+        // Fetch the main page
+        try {
+            $html = getSimpleHTMLDOM($url);
         if (!$html) {
-            // Skip processing if the main page could not be fetched
+                // Silently return if the main page couldn't be fetched
             return;
+        }
+        } catch (Exception $e) {
+            // Log the error for debugging (optional)
+            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching main page ' . $url . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+            return; // Silently return to avoid error feed
         }
 
         foreach ($html->find('article[class^="jeg_post"]') as $element) {
@@ -51,7 +59,8 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
             $item['author'] = $element->find('div.jeg_meta_author a', 0)->plaintext ?? '';
 
             // Fetch the article page
-            $articleHtml = @getSimpleHTMLDOM($item['uri']);
+            try {
+                $articleHtml = getSimpleHTMLDOM($item['uri']);
             if (!$articleHtml) {
                 // Skip this article if the content could not be fetched
                 continue;
@@ -72,7 +81,13 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
             foreach ($articleText as $paragraph) {
                 $item['content'] .= $paragraph->outertext;
             }
+            } catch (Exception $e) {
+                // Skip this article if an HTTP error (e.g., 500) occurs
+                // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
+                continue;
+            }
 
+            $item['uid'] = $item['uri'];
             $this->items[] = $item;
         }
     }
