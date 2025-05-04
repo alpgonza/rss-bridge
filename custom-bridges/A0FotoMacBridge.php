@@ -4,7 +4,7 @@ class A0FotoMacBridge extends FeedExpander {
 	const NAME = 'Fotomac Basketbol';
 	const URI = 'https://www.fotomac.com.tr';
 	const DESCRIPTION = 'Basketball feed from fotomac.com.tr';
-	const MAINTAINER = 'your-name';
+	const MAINTAINER = 'Alpgonza';
 	const PARAMETERS = [];
 
 	const FEED_URL = 'https://www.fotomac.com.tr/rss/basketbol.xml';

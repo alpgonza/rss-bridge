@@ -2,7 +2,7 @@
 class A0ParamedyaYazarlarBridge extends BridgeAbstract {
     const NAME = 'Yazarlar';
     const URI = 'https://www.paramedya.com/';
-    const DESCRIPTION = 'Fetches articles from selected authors on Paramedya.';
+    const DESCRIPTION = 'Fetches articles from selected authors on ParaMedya.';
     const MAINTAINER = 'Alpgonza';
     const CACHE_TIMEOUT = 3600; // 1 hour
     const PARAMETERS = [
@@ -28,7 +28,7 @@ class A0ParamedyaYazarlarBridge extends BridgeAbstract {
     public function getName() {
         $category = $this->getInput('category');
         $categoryNames = array_flip(self::PARAMETERS[0]['category']['values']);
-        return 'Paramedya - ' . (isset($categoryNames[$category]) ? $categoryNames[$category] : self::NAME);
+        return 'ParaMedya - ' . (isset($categoryNames[$category]) ? $categoryNames[$category] : self::NAME);
     }
 
     public function collectData() {
