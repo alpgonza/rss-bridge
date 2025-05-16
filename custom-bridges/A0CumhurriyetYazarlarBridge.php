@@ -2,7 +2,7 @@
 
 class A0CumhurriyetYazarlarBridge extends BridgeAbstract {
     const NAME = 'Cumhuriyet Yazarlar';
-    const URI = 'https://www.cumhuriyet.com.tr/rss/1';
+    const URI = 'https://www.cumhuriyet.com.tr/rss/yazarlar';
     const DESCRIPTION = 'Generates RSS feeds for Cumhuriyet writers';
     const MAINTAINER = 'Alpgonza';
     const CACHE_TIMEOUT = 3600; // 1 hour
@@ -10,14 +10,23 @@ class A0CumhurriyetYazarlarBridge extends BridgeAbstract {
     public function collectData() {
         // Fetch the XML feed
         try {
-            $xml = simplexml_load_file(self::URI);
-            if (!$xml) {
-                // Silently return if the XML feed couldn't be fetched
-                return;
+            $context = stream_context_create([
+                'http' => [
+                    'header' => 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                ]
+            ]);
+            $rssContent = @file_get_contents(self::URI, false, $context);
+            if ($rssContent === false) {
+                returnServerError('Could not fetch the RSS feed.');
+            }
+
+            libxml_use_internal_errors(true);
+            $xml = @simplexml_load_string($rssContent);
+            libxml_clear_errors();
+            if ($xml === false) {
+                returnServerError('Could not parse the RSS feed.');
             }
         } catch (Exception $e) {
-            // Log the error for debugging (optional)
-            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching XML: ' . $e->getMessage() . "\n", FILE_APPEND);
             return; // Silently return to avoid error feed
         }
 
@@ -47,43 +56,43 @@ class A0CumhurriyetYazarlarBridge extends BridgeAbstract {
 
             // Fetch the article page for content and author
             try {
-                $articlePage = getSimpleHTMLDOM($item['uri']);
-            if (!$articlePage) {
-                // Skip this article if the content could not be fetched
-                continue;
-            }
-
-                // Check for error pages (e.g., SSL or server errors)
-            if (isset($articlePage->innertext) && 
-                (strpos($articlePage->innertext, 'error') !== false || 
-                 strpos($articlePage->innertext, 'SSL') !== false || 
-                 strpos($articlePage->innertext, 'cURL') !== false)) {
-                continue; // Skip if the page contains error information
-            }
-
-            // Get author
-            $authorElement = $articlePage->find('div.adi', 0);
-            if ($authorElement) {
-                $item['author'] = trim($authorElement->plaintext);
-            }
-
-            // Get content
-            $contentElement = $articlePage->find('div.haberMetni', 0);
-            if ($contentElement) {
-                // Remove unwanted elements
-                foreach ($contentElement->find('p[class*="inad-text"]') as $unwanted) {
-                    $unwanted->outertext = '';
+                $articleContext = stream_context_create([
+                    'http' => [
+                        'header' => 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    ]
+                ]);
+                $articlePage = @file_get_contents($item['uri'], false, $articleContext);
+                if ($articlePage === false) {
+                    continue; // Skip this article if the content could not be fetched
                 }
-                
-                // Append article content to thumbnail
-                $contentHtml .= $contentElement->innertext;
-            }
 
-            $item['content'] = $contentHtml;
+                $articleDom = str_get_html($articlePage);
+
+                // Get author from the <meta> tag with name="articleAuthor"
+                $authorElement = $articleDom->find('meta[name="articleAuthor"]', 0);
+                if ($authorElement) {
+                    $author = html_entity_decode(trim($authorElement->content), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $item['author'] = $author;
+
+                    // Prepend author name to the title
+                    $item['title'] = $author . ' : ' . $item['title'];
+                }
+
+                // Get content from the div with class "text-content"
+                $contentElement = $articleDom->find('div.text-content', 0);
+                if ($contentElement) {
+                    // Remove unwanted elements
+                    foreach ($contentElement->find('p[class*="inad-text"]') as $unwanted) {
+                        $unwanted->outertext = '';
+                    }
+
+                    // Append article content to thumbnail
+                    $contentHtml .= $contentElement->innertext;
+                }
+
+                $item['content'] = $contentHtml;
             } catch (Exception $e) {
-                // Skip this article if an HTTP error (e.g., 500) occurs
-                // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
-                continue;
+                continue; // Skip this article if an error occurs
             }
 
             $item['uid'] = $item['uri'];
