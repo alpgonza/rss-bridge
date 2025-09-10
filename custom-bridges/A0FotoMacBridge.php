@@ -10,13 +10,16 @@ class A0FotoMacBridge extends FeedExpander {
 	const FEED_URL = 'https://www.fotomac.com.tr/rss/basketbol.xml';
 
 	public function collectData() {
-        // Create a custom SSL context to bypass certificate verification (temporary workaround)
+        // Create a custom SSL context and set a browser-like User-Agent
         $context = stream_context_create([
             'ssl' => [
                 'verify_peer' => false,
                 'verify_peer_name' => false,
                 'allow_self_signed' => true,
             ],
+            'http' => [
+                'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36\r\n"
+            ]
         ]);
 
 		// Fetch the RSS feed
