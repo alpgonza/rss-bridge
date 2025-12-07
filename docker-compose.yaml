@@ -4,12 +4,13 @@ services:
     container_name: rss-bridge
     volumes:
       - ./config:/config
-      - ./custom-bridges:/custom-bridges
+      - ./custom-bridges:/app/bridges:ro
     networks:
       - freshrss
     ports:
       - 4000:80
-    entrypoint: ["/bin/sh", "-c", "cp -r /custom-bridges/* /app/bridges/ 2>/dev/null || true && /app/docker-entrypoint.sh"]
+    environment:
+      - RSSBRIDGE_CUSTOM_BRIDGES=/app/bridges
     restart: unless-stopped
 
 networks:
