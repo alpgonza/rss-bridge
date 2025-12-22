@@ -7,12 +7,17 @@ services:
       - ./custom-bridges:/app/bridges:ro
     networks:
       - freshrss
+      - tinyrss
     ports:
       - 4000:80
     environment:
       - RSSBRIDGE_CUSTOM_BRIDGES=/app/bridges
     restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
 
 networks:
   freshrss:
+    external: true
+  tinyrss:
     external: true
