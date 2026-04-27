@@ -1,0 +1,20 @@
+[Unit]
+Description=RSS-Bridge Container Service
+After=network-online.target
+
+[Container]
+Image=docker.io/rssbridge/rss-bridge:latest
+AutoUpdate=registry
+ContainerName=rss-bridge
+PublishPort=4000:80
+Environment=RSSBRIDGE_CUSTOM_BRIDGES=/app/bridges
+Volume=/home/yonetici/podman/rss-bridge/config:/config
+Volume=/home/yonetici/podman/rss-bridge/custom-bridges:/app/bridges:ro
+Network=backend
+
+[Service]
+# Mapping 'unless-stopped' to systemd's always restart
+Restart=always
+
+[Install]
+WantedBy=default.target
