@@ -31,21 +31,20 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
 
         $fetchFullContent = $this->getInput('fetch_full_content');
 
-        foreach ($html->find('section.item') as $element) {
+        foreach ($html->find('div.author-card') as $element) {
             $item = [];
 
             // Extract author name
-            $authorElement = $element->find('a[rel="author"]', 0);
+            $authorElement = $element->find('a.author-name', 0);
             $author = $authorElement ? $authorElement->plaintext : 'Unknown';
 
-            // Extract title and URL from <h3>
-            $titleElement = $element->find('h3 a', 0);
+            // Extract title and URL from author-last-post link
+            $titleElement = $element->find('a.author-last-post', 0);
             if (!$titleElement) {
                 continue; // Skip if title element is missing
             }
             $title = $titleElement->plaintext;
-            $relativeUri = $titleElement->href;
-            $uri = 'https://halktv.com.tr' . $relativeUri; // Ensure the URL is absolute
+            $uri = $titleElement->href; // URL is already absolute in the new HTML
 
             // Extract thumbnail
             $thumbnailElement = $element->find('img', 0);
@@ -70,10 +69,15 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
                 }
 
                 // Extract article content
-                $contentElement = $articleHtml->find('div.text-content', 0);
+                $contentElement = $articleHtml->find('div.content-text', 0);
                 if ($contentElement) {
                     // Remove unwanted elements (e.g., banners)
                     foreach ($contentElement->find('div[class*="banner"]') as $unwanted) {
+                        $unwanted->outertext = '';
+                    }
+
+                    // Remove ad blocks
+                    foreach ($contentElement->find('div.adpro') as $unwanted) {
                         $unwanted->outertext = '';
                     }
 
@@ -87,7 +91,7 @@ class A0HalkTVYazarlarBridge extends BridgeAbstract {
                 }
 
                 // Get article date
-                $dateElement = $articleHtml->find('div.content-date time', 0);
+                $dateElement = $articleHtml->find('div.post-dates time', 0);
                 if ($dateElement) {
                     $item['timestamp'] = strtotime($dateElement->datetime);
                 }
