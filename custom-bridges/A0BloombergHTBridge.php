@@ -9,7 +9,8 @@ class A0BloombergHTBridge extends BridgeAbstract {
     const PARAMETERS = []; // No parameters required
 
     public function collectData() {
-        $rssFeedUrl = self::URI . 'rss';
+        // /rss now 301-redirects here, and getContents() does not follow redirects
+        $rssFeedUrl = self::URI . 'rss/tum-haberler.xml';
 
         // Fetch the RSS feed
         try {
@@ -42,9 +43,9 @@ class A0BloombergHTBridge extends BridgeAbstract {
             $item['content'] = $rssItem->find('description', 0)->plaintext;
 
             // Add image from RSS feed if available
-            $imageElement = $rssItem->find('image', 0);
-            if ($imageElement) {
-                $imageUrl = trim($imageElement->innertext);
+            $imageElement = $rssItem->find('enclosure', 0);
+            if ($imageElement && $imageElement->getAttribute('url')) {
+                $imageUrl = trim($imageElement->getAttribute('url'));
                 $item['enclosures'][] = $imageUrl;
                 $item['content'] = '<img src="' . $imageUrl . '" alt="News Image"><br>' . $item['content'];
             }

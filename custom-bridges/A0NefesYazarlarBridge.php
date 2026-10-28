@@ -7,88 +7,78 @@ class A0NefesYazarlarBridge extends BridgeAbstract {
     const CACHE_TIMEOUT = 3600;
     const PARAMETERS = [];
 
+    // The site pages are behind a Cloudflare challenge; only the export feed is reachable
+    const FEED_URI = 'https://www.nefes.com.tr/export/rss/yazarlar';
+
+    // The feed has no author field, so names come from the URL slug.
+    // Slugs lose Turkish characters; known writers are spelled correctly here.
+    const AUTHORS = [
+        'alican-ozcan' => 'Alican Özcan',
+        'argun-darici' => 'Argun Darıcı',
+        'aytunc-erkin' => 'Aytunç Erkin',
+        'can-atakli' => 'Can Ataklı',
+        'damla-turgutlu-soybas' => 'Damla Turgutlu Soybaş',
+        'deniz-zeyrek' => 'Deniz Zeyrek',
+        'devrim-demirel' => 'Devrim Demirel',
+        'fatih-soylemezoglu' => 'Fatih Söylemezoğlu',
+        'memduh-bayraktaroglu' => 'Memduh Bayraktaroğlu',
+        'murat-muratoglu' => 'Murat Muratoğlu',
+        'nevsin-mengu' => 'Nevşin Mengü',
+        'nuray-babacan' => 'Nuray Babacan',
+        'soner-yalcin' => 'Soner Yalçın',
+        'umit-zileli' => 'Ümit Zileli',
+        'utkan-aydin' => 'Utkan Aydın',
+    ];
+
     public function collectData() {
-        // Fetch the main page
+        // Fetch the feed
         try {
-            $html = getSimpleHTMLDOM(self::URI);
-            if (!$html) {
-                // Silently return if the main page couldn't be fetched
+            $rss = simplexml_load_string(trim(getContents(self::FEED_URI)));
+            if (!$rss) {
                 return;
             }
         } catch (Exception $e) {
-            // Log the error for debugging (optional)
-            // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching main page: ' . $e->getMessage() . "\n", FILE_APPEND);
             return; // Silently return to avoid error feed
         }
 
-        foreach ($html->find('section[1] article') as $element) {
+        foreach ($rss->channel->item as $rssItem) {
             $item = [];
 
-            // Get article title and URL from the second <a> element
-            $titleElement = $element->find('a.card-content--title', 0);
-            if (!$titleElement) continue;
+            $item['uri'] = trim((string)$rssItem->link);
 
-            // Get author from span inside the link
-            $authorElement = $titleElement->find('span', 0);
-            if (!$authorElement) continue;
-
-            // Get the article URL
-            $item['uri'] = $titleElement->href;
-            if (!str_starts_with($item['uri'], 'https://')) {
-                $item['uri'] = 'https://www.nefes.com.tr' . $item['uri'];
+            // Author slug: /yazarlar/{slug}/{article}
+            $author = '';
+            if (preg_match('#/yazarlar/([^/]+)/#', $item['uri'], $matches)) {
+                $slug = $matches[1];
+                $author = self::AUTHORS[$slug] ?? ucwords(str_replace('-', ' ', $slug));
             }
 
-            // Get title from title attribute and author from span
-            $item['title'] = $authorElement->plaintext . ' : ' . $titleElement->title;
-            $item['author'] = trim($authorElement->plaintext);
+            $title = html_entity_decode(trim((string)$rssItem->title), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $item['title'] = $author ? $author . ' : ' . $title : $title;
+            $item['author'] = $author;
 
-            // Get thumbnail if available
-            $thumbnailElement = $element->find('img', 0);
-            if ($thumbnailElement && isset($thumbnailElement->src)) {
-                $item['enclosures'] = [$thumbnailElement->src];
-                $item['thumbnail'] = $thumbnailElement->src;
+            $timestamp = strtotime((string)$rssItem->pubDate);
+            if ($timestamp !== false) {
+                $item['timestamp'] = $timestamp;
             }
 
-            // Fetch the article page to get the date and content
-            try {
-                $articleHtml = getSimpleHTMLDOM($item['uri']);
-            if (!$articleHtml) {
-                // Skip this article if the content could not be fetched
-                continue;
+            $description = (string)$rssItem->description;
+
+            // Author photo; request 600x338 instead of the feed's 150x84
+            $contentHtml = '';
+            if (preg_match('/<img[^>]+src="([^"]+)"/', $description, $matches)) {
+                $imageUrl = str_replace('/Cw150h84q95gc/', '/Cw600h338q95gc/', $matches[1]);
+                $item['enclosures'] = [$imageUrl];
+                $contentHtml = '<img src="' . $imageUrl . '" /><br/><br/>';
             }
 
-            // Check for SSL or cURL errors
-            if (isset($articleHtml->innertext) && 
-                (strpos($articleHtml->innertext, 'error') !== false || 
-                 strpos($articleHtml->innertext, 'SSL') !== false || 
-                 strpos($articleHtml->innertext, 'cURL') !== false)) {
-                continue; // Skip if the page contains error information
+            // Excerpt is double-encoded (e.g. &amp;ouml;), so decode twice
+            if (preg_match('#<h4>(.*?)</h4>#s', $description, $matches)) {
+                $excerpt = html_entity_decode(html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $contentHtml .= '<p>' . htmlspecialchars(trim($excerpt)) . '</p>';
             }
 
-            // Get date from the card-content time element
-            $dateElement = $articleHtml->find('div.post-time time', 0);
-            if ($dateElement) {
-                $item['timestamp'] = strtotime($dateElement->datetime);
-            }
-
-            // Get article content
-            $contentElement = $articleHtml->find('div.post-content', 0);
-            if ($contentElement) {
-                // Start content with thumbnail
-                $contentHtml = '';
-                if (isset($item['thumbnail'])) {
-                    $contentHtml = '<img src="' . $item['thumbnail'] . '" /><br/><br/>';
-                }
-                
-                // Add article content
-                $contentHtml .= $contentElement->innertext;
-                $item['content'] = $contentHtml;
-                }
-            } catch (Exception $e) {
-                // Skip this article if an HTTP error (e.g., 500) occurs
-                // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
-                continue;
-            }
+            $item['content'] = $contentHtml;
 
             // Set unique ID using article URL
             $item['uid'] = $item['uri'];

@@ -1,8 +1,8 @@
 <?php
 class A0ErtugrulOzkokYazilariBridge extends BridgeAbstract {
     const NAME = 'Ertuğrul Özkök Yazıları';
-    const URI = 'https://bizimtv.com.tr/yazarlar/ertugrul-ozkok';
-    const DESCRIPTION = 'Fetches articles from Ertuğrul Özkök on BizimTV';
+    const URI = 'https://10haber.net/yazarlar/ertugrul-ozkok/';
+    const DESCRIPTION = 'Fetches articles from Ertuğrul Özkök on 10Haber';
     const MAINTAINER = 'Alpgonza';
     const PARAMETERS = [
         [
@@ -16,10 +16,11 @@ class A0ErtugrulOzkokYazilariBridge extends BridgeAbstract {
     const CACHE_TIMEOUT = 3600; // 1 hour
 
     public function collectData() {
-        // Fetch the main page
+        // The author feed only carries an excerpt, so full content is scraped from the article page
         try {
-            $html = getSimpleHTMLDOM(self::URI);
-            if (!$html) {
+            // trim(): the feed is served with a leading newline before the XML declaration
+            $rss = simplexml_load_string(trim(getContents(self::URI . 'feed/')));
+            if (!$rss) {
                 return;
             }
         } catch (Exception $e) {
@@ -28,45 +29,24 @@ class A0ErtugrulOzkokYazilariBridge extends BridgeAbstract {
 
         $fetchFullContent = $this->getInput('fetch_full_content');
 
-        // Find all articles in the article list section
-        foreach ($html->find('section.article-list article.item') as $element) {
+        foreach ($rss->channel->item as $rssItem) {
             $item = [];
 
-            // Extract title and URL
-            $linkElement = $element->find('a', 0);
-            if (!$linkElement) {
-                continue;
-            }
-            $title = trim($linkElement->plaintext);
-            $uri = $linkElement->href;
-            if (!filter_var($uri, FILTER_VALIDATE_URL)) {
-                $uri = 'https://bizimtv.com.tr' . $uri;
+            $uri = trim((string)$rssItem->link);
+            $title = html_entity_decode(trim((string)$rssItem->title), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+            $timestamp = strtotime((string)$rssItem->pubDate);
+            if ($timestamp !== false) {
+                $item['timestamp'] = $timestamp;
             }
 
-            // Extract date
-            $dateElement = $element->find('span.date', 0);
-            $dateStr = $dateElement ? trim($dateElement->plaintext) : '';
-            if ($dateStr) {
-                // Parse Turkish date format (e.g., "06 Eylül 2025 Cumartesi 23:08")
-                if (preg_match('/(\d{2})\s+(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(\d{4})\s+(?:Pazartesi|Salı|Çarşamba|Perşembe|Cuma|Cumartesi|Pazar)\s+(\d{2}):(\d{2})/', $dateStr, $matches)) {
-                    $day = $matches[1];
-                    $month = array_search($matches[2], [
-                        'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-                    ]) + 1;
-                    $year = $matches[3];
-                    $hour = $matches[4];
-                    $minute = $matches[5];
-                    
-                    $timestamp = mktime($hour, $minute, 0, $month, $day, $year);
-                    if ($timestamp !== false) {
-                        $item['timestamp'] = $timestamp;
-                    }
-                }
+            // Feed excerpt starts with the post thumbnail; use it as enclosure
+            $contentHtml = (string)$rssItem->description;
+            if (preg_match('/<img[^>]+src="([^"]+)"/', $contentHtml, $matches)) {
+                $item['enclosures'] = [$matches[1]];
             }
 
             // If "Fetch Full Content" is enabled, fetch the article content
-            $contentHtml = '';
             if ($fetchFullContent) {
                 try {
                     $articleHtml = getSimpleHTMLDOM($uri);
@@ -74,9 +54,27 @@ class A0ErtugrulOzkokYazilariBridge extends BridgeAbstract {
                         continue;
                     }
 
-                    // Extract article content
-                    $contentElement = $articleHtml->find('article.article-content', 0);
+                    $contentElement = $articleHtml->find('div#hbrconttr', 0);
                     if ($contentElement) {
+                        // Inline images point to 300px thumbnails; use the largest srcset candidate instead
+                        foreach ($contentElement->find('img') as $img) {
+                            $srcset = $img->getAttribute('srcset');
+                            if ($srcset) {
+                                $best = $img->getAttribute('src');
+                                $bestWidth = 0;
+                                foreach (explode(',', $srcset) as $candidate) {
+                                    $parts = preg_split('/\s+/', trim($candidate));
+                                    $width = isset($parts[1]) ? (int)$parts[1] : 0;
+                                    if ($width > $bestWidth) {
+                                        $best = $parts[0];
+                                        $bestWidth = $width;
+                                    }
+                                }
+                                $img->setAttribute('src', $best);
+                                $img->removeAttribute('srcset');
+                                $img->removeAttribute('sizes');
+                            }
+                        }
                         $contentHtml = $contentElement->innertext;
                     }
                 } catch (Exception $e) {
@@ -88,7 +86,7 @@ class A0ErtugrulOzkokYazilariBridge extends BridgeAbstract {
             $item['title'] = 'Ertuğrul Özkök : ' . $title;
             $item['uri'] = $uri;
             $item['author'] = 'Ertuğrul Özkök';
-            $item['content'] = $fetchFullContent ? $contentHtml : '';
+            $item['content'] = $contentHtml;
             $item['uid'] = $uri;
 
             $this->items[] = $item;
