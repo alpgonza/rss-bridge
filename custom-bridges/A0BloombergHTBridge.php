@@ -43,6 +43,7 @@ class A0BloombergHTBridge extends BridgeAbstract {
             $item['content'] = $rssItem->find('description', 0)->plaintext;
 
             // Add image from RSS feed if available
+            $imageUrl = '';
             $imageElement = $rssItem->find('enclosure', 0);
             if ($imageElement && $imageElement->getAttribute('url')) {
                 $imageUrl = trim($imageElement->getAttribute('url'));
@@ -88,20 +89,22 @@ class A0BloombergHTBridge extends BridgeAbstract {
                 }
             }
 
-            // Fix: Update image selector to match actual HTML structure
-            $imageElement = $linkedPage->find('div.aspect-video img', 0);
-            $imageHtml = $imageElement ? '<img src="' . $imageElement->getAttribute('src') . '" alt="News Image"><br>' : '';
+            // Prefer the RSS enclosure image; fall back to the article page image.
+            // Using the same URL in content and enclosure keeps readers from showing it twice.
+            if (!$imageUrl) {
+                $imageElement = $linkedPage->find('div.aspect-video img', 0);
+                if ($imageElement) {
+                    $imageUrl = $imageElement->getAttribute('data-src') ?: $imageElement->getAttribute('src');
+                    $item['enclosures'][] = $imageUrl;
+                }
+            }
+            $imageHtml = $imageUrl ? '<img src="' . $imageUrl . '" alt="News Image"><br>' : '';
 
             // Combine all content elements
             $fullContent = $articleDescription . $imageHtml . $contentHtml;
             if (!empty($fullContent)) {
                 $item['content'] = $fullContent;
             }
-
-            // Add the image as an enclosure
-            if ($imageElement) {
-                    $item['enclosures'][] = $imageElement->getAttribute('data-src') ?: $imageElement->getAttribute('src');
-                }
             } catch (Exception $e) {
                 // Skip this article if an HTTP error (e.g., 500) occurs
                 // file_put_contents('bridge_errors.log', date('Y-m-d H:i:s') . ' - Error fetching article ' . $item['uri'] . ': ' . $e->getMessage() . "\n", FILE_APPEND);
